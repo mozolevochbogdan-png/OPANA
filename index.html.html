@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title id="page-title">Svinopedia</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f425f4",
+                        "background-dark": "#0F0F0F",
+                    },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"] }
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(244, 37, 244, 0.2);
+            transition: all 0.3s ease;
+        }
+        .neon-glow { text-shadow: 0 0 10px rgba(244, 37, 244, 0.5); }
+        .hidden { display: none !important; }
+        
+        /* Стили для ссылок внутри статей */
+        #article-body a {
+            color: #3b82f6;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        #article-body a:hover { color: #f425f4; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #f425f4; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen overflow-hidden">
+
+    <div class="flex h-screen">
+        <aside class="w-64 border-r border-white/10 flex flex-col py-8 px-4 bg-background-dark/50">
+            <div class="flex items-center gap-3 mb-10 px-2 cursor-pointer" onclick="showView('home')">
+                <div class="bg-primary p-2 rounded-lg shadow-[0_0_15px_rgba(244,37,244,0.4)]">
+                    <span class="material-symbols-outlined text-white">grid_view</span>
+                </div>
+                <h2 id="site-name-sidebar" class="text-xl font-bold tracking-tight neon-glow text-white">Svinopedia</h2>
+            </div>
+
+            <nav class="flex flex-col gap-2 flex-1">
+                <button onclick="showView('home')" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all w-full text-left">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="font-medium">Главная</span>
+                </button>
+
+                <div id="admin-menu" class="hidden mt-4 pt-4 border-t border-white/5 space-y-2">
+                    <button onclick="prepareCreate()" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-white transition-all w-full text-left">
+                        <span class="material-symbols-outlined text-primary">add_circle</span>
+                        <span class="font-medium">Создать статью</span>
+                    </button>
+                    <button onclick="showView('settings')" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 transition-all w-full text-left">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="font-medium">Настройки</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-white/5">
+                <button onclick="openLoginModal()" id="btn-login" class="flex items-center gap-4 px-3 py-2 w-full text-primary hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">login</span>
+                    <span class="font-medium">Войти</span>
+                </button>
+                <button onclick="logout()" id="btn-logout" class="flex items-center gap-4 px-3 py-2 w-full text-slate-500 hover:text-red-400 transition-colors hidden">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="font-medium">Выйти (bogdanyt5)</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col overflow-y-auto">
+            <div id="view-home" class="max-w-5xl mx-auto w-full px-8 py-12">
+                <div class="mb-12 text-center">
+                    <h1 id="home-title" class="text-5xl font-bold mb-8">База статей</h1>
+                    <div class="relative max-w-2xl mx-auto group">
+                        <span class="material-symbols-outlined absolute left-4 top-4 text-slate-500 group-focus-within:text-primary">search</span>
+                        <input id="searchInput" oninput="renderArticles()" type="text" 
+                               class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 focus:border-primary outline-none transition-all" 
+                               placeholder="Найти статью...">
+                    </div>
+                </div>
+                <div id="articles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+
+            <div id="view-create" class="max-w-3xl mx-auto w-full px-8 py-12 hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 id="editor-heading" class="text-3xl font-bold">Новая статья</h2>
+                    <button onclick="insertLink()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all">
+                        <span class="material-symbols-outlined text-sm">link</span> Вставить ссылку
+                    </button>
+                </div>
+                
+                <div class="glass-card p-8 rounded-3xl space-y-6">
+                    <input type="hidden" id="edit-id">
+                    <input type="text" id="post-title" class="w-full bg-white/10 border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none" placeholder="Заголовок статьи">
+                    
+                    <div>
+                        <textarea id="post-content" rows="12" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-primary outline-none font-sans" placeholder="Напишите текст... Выделите слово и нажмите кнопку 'Вставить ссылку' сверху."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-3">Прикрепить изображения</label>
+                        <input type="file" id="post-files" multiple accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary file:font-bold">
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button onclick="showView('home')" class="flex-1 bg-white/5 py-4 rounded-xl font-bold">Отмена</button>
+                        <button onclick="savePost()" class="flex-[2] bg-primary py-4 rounded-xl font-bold shadow-lg shadow-primary/20">Сохранить и опубликовать</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-read" class="max-w-4xl mx-auto w-full px-8 py-12 hidden">
+                <button onclick="showView('home')" class="mb-8 text-slate-500 flex items-center gap-1 hover:text-white transition-colors font-bold">
+                    <span class="material-symbols-outlined">arrow_back</span> К СПИСКУ
+                </button>
+                <div class="glass-card p-8 md:p-12 rounded-3xl border-primary/10">
+                    <h1 id="read-title" class="text-5xl font-bold mb-6 text-white"></h1>
+                    <div id="article-body" class="text-slate-300 text-lg leading-relaxed mb-10"></div>
+                    <div id="article-photos" class="grid grid-cols-1 gap-6 border-t border-white/10 pt-10"></div>
+                </div>
+            </div>
+
+            <div id="view-settings" class="max-w-xl mx-auto w-full px-8 py-12 hidden">
+                <h2 class="text-3xl font-bold mb-8">Настройки сайта</h2>
+                <div class="glass-card p-8 rounded-2xl">
+                    <label class="block text-slate-500 mb-2">Изменить название проекта</label>
+                    <input type="text" id="input-site-name" class="w-full bg-white/10 border border-white/10 rounded-xl p-4 mb-6">
+                    <button onclick="applySiteSettings()" class="w-full bg-primary py-4 rounded-xl font-bold">Применить</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-auth" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+        <div class="glass-card p-8 rounded-3xl w-full max-w-sm border-primary/50">
+            <h3 class="text-2xl font-bold mb-6 text-center text-white">Вход автора</h3>
+            <input type="text" id="auth-user" placeholder="Никнейм" class="w-full bg-white/10 border border-white/10 rounded-xl p-4 mb-4 text-white">
+            <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-white/10 border border-white/10 rounded-xl p-4 mb-6 text-white">
+            <button onclick="attemptLogin()" class="w-full bg-primary py-4 rounded-xl font-bold text-white shadow-lg shadow-primary/20">Войти в систему</button>
+            <button onclick="closeLoginModal()" class="w-full text-slate-500 py-4 text-sm font-medium">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        let IS_LOGGED_IN = false;
+        const ADMIN_INFO = { user: 'bogdanyt5', pass: 'OPANA' };
+
+        window.onload = () => {
+            initSiteName();
+            renderArticles();
+        };
+
+        function initSiteName() {
+            const name = localStorage.getItem('svino_name_v2') || 'Svinopedia';
+            document.getElementById('site-name-sidebar').innerText = name;
+            document.getElementById('page-title').innerText = name;
+            document.getElementById('input-site-name').value = name;
+        }
+
+        function applySiteSettings() {
+            const name = document.getElementById('input-site-name').value;
+            if(name) {
+                localStorage.setItem('svino_name_v2', name);
+                location.reload();
+            }
+        }
+
+        function showView(view) {
+            ['view-home', 'view-create', 'view-read', 'view-settings'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        // --- Удобная вставка ссылки ---
+        function insertLink() {
+            const textarea = document.getElementById('post-content');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+
+            if (!selectedText) {
+                alert('Сначала выделите мышкой текст, который станет ссылкой!');
+                return;
+            }
+
+            const url = prompt('Введите адрес ссылки (например, https://google.com):', 'https://');
+            
+            if (url && url !== 'https://') {
+                const linkCode = `<a href="${url}" target="_blank">${selectedText}</a>`;
+                const before = textarea.value.substring(0, start);
+                const after = textarea.value.substring(end);
+                
+                textarea.value = before + linkCode + after;
+            }
+        }
+
+        // --- Остальные функции ---
+        function openLoginModal() { document.getElementById('modal-auth').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('modal-auth').classList.add('hidden'); }
+
+        function attemptLogin() {
+            const u = document.getElementById('auth-user').value;
+            const p = document.getElementById('auth-pass').value;
+            if(u === ADMIN_INFO.user && p === ADMIN_INFO.pass) {
+                IS_LOGGED_IN = true;
+                document.getElementById('admin-menu').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                document.getElementById('btn-login').classList.add('hidden');
+                closeLoginModal();
+                renderArticles();
+            } else { alert('Ошибка доступа!'); }
+        }
+
+        function logout() { location.reload(); }
+
+        function prepareCreate() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-content').value = '';
+            document.getElementById('post-files').value = '';
+            document.getElementById('editor-heading').innerText = 'Создать новую статью';
+            showView('create');
+        }
+
+        async function savePost() {
+            const id = document.getElementById('edit-id').value;
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const fileInput = document.getElementById('post-files');
+
+            if(!title || !content) return alert('Заполните заголовок и текст!');
+
+            const imagePromises = Array.from(fileInput.files).map(file => {
+                return new Promise(res => {
+                    const r = new FileReader();
+                    r.onload = (e) => res(e.target.result);
+                    r.readAsDataURL(file);
+                });
+            });
+
+            const newImgs = await Promise.all(imagePromises);
+            let posts = JSON.parse(localStorage.getItem('svino_db')) || [];
+
+            if(id) {
+                const i = posts.findIndex(p => p.id == id);
+                const oldImgs = posts[i].images || [];
+                posts[i] = { ...posts[i], title, content, images: newImgs.length > 0 ? newImgs : oldImgs };
+            } else {
+                posts.unshift({ id: Date.now(), title, content, images: newImgs, date: new Date().toLocaleDateString('ru-RU') });
+            }
+
+            localStorage.setItem('svino_db', JSON.stringify(posts));
+            showView('home');
+            renderArticles();
+        }
+
+        function renderArticles() {
+            const posts = JSON.parse(localStorage.getItem('svino_db')) || [];
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('articles-grid');
+            grid.innerHTML = '';
+
+            posts.filter(p => p.title.toLowerCase().includes(q)).forEach(post => {
+                const img = post.images && post.images.length > 0 ? `<img src="${post.images[0]}" class="w-full h-44 object-cover">` : '';
+                grid.innerHTML += `
+                    <div class="glass-card rounded-2xl overflow-hidden flex flex-col border-white/5">
+                        ${img}
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold mb-3 text-white">${post.title}</h3>
+                            <p class="text-slate-500 text-sm line-clamp-2 mb-6">${post.content.replace(/<[^>]*>/g, '')}</p>
+                            <div class="flex justify-between items-center mt-auto">
+                                <button onclick="readPost(${post.id})" class="text-primary font-bold text-sm hover:underline">Читать статью →</button>
+                                ${IS_LOGGED_IN ? `
+                                    <div class="flex gap-3">
+                                        <button onclick="editPost(${post.id})" class="text-slate-400 hover:text-white"><span class="material-symbols-outlined text-xl">edit</span></button>
+                                        <button onclick="deletePost(${post.id})" class="text-red-500 hover:text-red-400"><span class="material-symbols-outlined text-xl">delete</span></button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function readPost(id) {
+            const post = (JSON.parse(localStorage.getItem('svino_db')) || []).find(p => p.id == id);
+            document.getElementById('read-title').innerText = post.title;
+            document.getElementById('article-body').innerHTML = post.content.replace(/\n/g, '<br>');
+            
+            const area = document.getElementById('article-photos');
+            area.innerHTML = '';
+            if(post.images) post.images.forEach(i => area.innerHTML += `<img src="${i}" class="w-full rounded-2xl shadow-2xl border border-white/10">`);
+            showView('read');
+        }
+
+        function editPost(id) {
+            const post = (JSON.parse(localStorage.getItem('svino_db')) || []).find(p => p.id == id);
+            document.getElementById('edit-id').value = post.id;
+            document.getElementById('post-title').value = post.title;
+            document.getElementById('post-content').value = post.content;
+            document.getElementById('editor-heading').innerText = 'Редактировать статью';
+            showView('create');
+        }
+
+        function deletePost(id) {
+            if(confirm('Удалить статью?')) {
+                let posts = JSON.parse(localStorage.getItem('svino_db')) || [];
+                localStorage.setItem('svino_db', JSON.stringify(posts.filter(p => p.id != id)));
+                renderArticles();
+            }
+        }
+    </script>
+</body>
+</html>
